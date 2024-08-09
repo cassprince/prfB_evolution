@@ -1,0 +1,61 @@
+### --- prfB GENE SEQUENCES --- ###
+
+# Download prfB genes from NCBI prokaryotic reference genomes. Input was a list of reference genome accessions. Acquired 3/10/23.
+
+for p in $(cat accessions.txt); do 
+        echo "$p" 
+        fetch=$(efetch -db nucleotide -id $p -format native -mode xml) 
+        if $(echo "${fetch}" | grep -q 'prfB') 
+        then 
+                echo "prfB found. Writing prfB sequence." 
+                echo “${fetch}” | xtract -pattern Bioseq-set -block Seq-feat -if Gene-ref_locus -equals "prfB" -element Seq-interval_from,Seq-interval_to,Na-strand@value | awk -v p="$p" 'BEGIN{FS="\t";OFS="\t"}{print p,$1,$2,$3}' | while read -r chrom start stop strand ; do efetch -db nuccore -id $chrom -chr_start $start -chr_stop $stop -format fasta ; done >> prfB_from_NCBI.fasta 
+        else 
+                continue 
+        fi 
+done 
+
+# Reverse complimented any sequences that didn't begin with "*TG" using prfB_RC.py. 
+# Filtered out prfB sequences from genomes with <10% CheckM completeness using filter_fasta_by_name.R.
+# Aligned using MAFFT.
+
+/programs/mafft/bin/mafft prfB_NCBI_no_dups_RC.fasta > prfB_NCBI_filt_align.fasta
+
+# Searched sequences for stop codons using prfB_stop_finder.py.
+
+### --- GENOME ASSEMBLY DATA AND TAXONOMY --- ###
+
+# Download metadata for genomes.
+datasets summary genome taxon bacteria --reference --as-json-lines | dataformat tsv genome --fields accession,organism-name,organism-tax-id,assminfo-level,assmstats-gc-percent,assmstats-number-of-contigs,assmstats-number-of-scaffolds,checkm-completeness 
+
+# Download taxonomy/lineage for each assembly based on taxid.
+taxonkit lineage ref_taxID_list.txt | tee ref_lineage.txt 
+
+
+### --- 16S rRNA TREE --- ###
+
+# BLAST for 16S rRNA genes (queried using E. coli 16S rRNA gene).
+blastn -db ref_prok_rep_genomes -query 16S.fasta -max_target_seqs 100000 -perc_identity 50 –qcov_hsp_perc 50 -task blastn -outfmt 7 -out 16S_blast_hits_for_tree.csv 
+
+# Extract 16S sequences according to the subject start and end values in the BLAST output. 
+awk '{FS=","}{print $5,$12,$13}' 16S_blast_hits_for_tree.csv | xargs -n 3 sh -c 'blastdbcmd -db ref_prok_rep_genomes -entry "$0" -range "$1"-"$2" -outfmt %f >> 16S_blast_for_tree_plus.fasta' 
+awk '{FS=","}{print $5,$12,$13}' 16S_blast_hits_for_tree.csv | xargs -n 3 sh -c 'blastdbcmd -db ref_prok_rep_genomes -entry "$0" -range "$2"-"$1" -outfmt %f >> 16S_blast_for_tree_minus.fasta' 
+
+# Reverse complement 16S sequences that were on the minus strand and combine with sequences on the plus strand.
+/workdir/crp86/seqtk/seqtk seq -r 16S_blast_for_tree_minus.fasta > 16S_blast_for_tree_minus_R.fasta 
+cat 16S_blast_for_tree_plus.fasta 16S_blast_for_tree_minus_R.fasta > 16S_blast_hits_for_tree.fasta 
+
+# Align 16S genes with MAFFT. 
+/programs/mafft/bin/mafft 16S_blast_hits_for_tree.fasta > 16S_blast_hits_for_tree_align.fasta
+
+# Build the maximum-likelihood tree with Fasttree.
+/programs/FastTree-2.1.10/FastTree -nt -gtr -gamma 16S_blast_hits_for_tree_align.fasta > 16S_fasttree.tre
+
+### --- GENOME SUBSET CODING SEQUENCES --- ###
+
+# Download coding sequences from a 1000 random genome subset of the >12k genome dataset.
+datasets download genome accession --inputfile assembly_acc_cds.txt --include cds --dehydrated --filename bacteria_reference.zip 
+unzip bacteria_reference.zip -d bacteria_ref 
+datasets rehydrate --directory bacteria_ref  --gzip 
+find . -name \*.fna.gz -exec cp {} /workdir/crp86/bacteria_ref/ncbi_dataset/genomes \;   
+
+# Identified stop codons in sequences using cds_stop_finder.py.
