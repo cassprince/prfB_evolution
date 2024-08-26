@@ -74,16 +74,23 @@ p1 = gheatmap(p, df1, offset=-0.2, width=0.1, font.size=1, colnames = FALSE, col
   theme(text=element_text(size=18)) + 
   new_scale_fill()
 
-p2 = gheatmap(p, df2, offset=-0.2, width=0.1, font.size=1, colnames = FALSE, color=NA) + 
-  scale_fill_manual(values=c("no stop" = "gray80", "TGA" = "#961415", "TAA" = "#520e15", "TAG" = "white"), name="Internal stop codon \nidentity or modification", na.value = "white") +
-  theme(text=element_text(size=15)) +
-  new_scale_fill()
-
-p3 = gheatmap(p1, df3, offset=0.3, width=0.1, font.size=1, colnames = FALSE, color=NA) +
+p2 = gheatmap(p1, df3, offset=0.3, width=0.1, font.size=1, colnames = FALSE, color=NA) +
   theme(text=element_text(size=15)) +
   scale_fill_discrete(name = "Phylum/group", na.value = "white")
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\16S_tree_phy_8_1_24.png", p3, units = "in", width = 17, height = 13, dpi = 600)
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\16S_tree_phy_8_1_24.png", p2, units = "in", width = 17, height = 13, dpi = 600)
+
+### --- Figure S1 --- ###
+
+sup_df1 = data.frame(df$stop_identity)
+rownames(sup_df1) = rownames(df)
+
+sup_p1 = gheatmap(p, sup_df1, offset=-0.2, width=0.1, font.size=1, colnames = FALSE, color=NA) +
+  scale_fill_manual(values=c("no stop" = "gray80", "TGA" = "#961415", "TAA" = "#520e15", "TAG" = "white"), name="Internal stop codon \nidentity or modification", na.value = "white") + 
+  theme(text=element_text(size=18)) + 
+  new_scale_fill()
+
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\FigS1_8_26_24.png", sup_p1, units = "in", width = 17, height = 13, dpi = 600)
 
 ### --- TREE WITH BARCHART --- ###
 
