@@ -80,7 +80,7 @@ p2 = gheatmap(p1, df3, offset=0.3, width=0.1, font.size=1, colnames = FALSE, col
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\16S_tree_phy_8_1_24.png", p2, units = "in", width = 17, height = 13, dpi = 600)
 
-### --- Figure S1 --- ###
+# Figure S1: Stop identity on tree
 
 sup_df1 = data.frame(df$stop_identity)
 rownames(sup_df1) = rownames(df)
@@ -92,13 +92,13 @@ sup_p1 = gheatmap(p, sup_df1, offset=-0.2, width=0.1, font.size=1, colnames = FA
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\FigS1_8_26_24.png", sup_p1, units = "in", width = 17, height = 13, dpi = 600)
 
-### --- TREE WITH BARCHART --- ###
+### --- FIGURE 5A: TREE WITH BARCHART --- ###
 
 # Select only phyla with more than 10 genomes.
 
 n_vals = data.frame(table(df_filt$phylum))
 
-# Identify teh proportion of genomes that have the frameshift in each phylum.
+# Identify the proportion of genomes that have the frameshift in each phylum.
 table_all = as.data.frame(prop.table(table(df_filt$phylum, df_filt$stop_presence), margin = 1)*100)
 table_yes = table_all[table_all$Var2 == "yes",]
 
@@ -144,7 +144,7 @@ dev.off()
 
 ### --- OTHER PLOTS --- ###
 
-# GC content violin plots
+# Figure 5B: GC % violin plot
 df_gc = df %>%
   mutate(FS = recode(stop_identity, TGA = "frameshift", TAA = "frameshift", 'no stop' = "no frameshift"))
 
@@ -167,7 +167,7 @@ vplot = ggplot(df_gc, aes(x = factor(FS, level=c('no frameshift', 'frameshift'))
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_violin_8_1_24.png", vplot, width = 4.5, height = 6, dpi = 600, units = "in") 
 
-# Supplemental Figure *** gc no Actinobacteria.
+# Figure S3: GC % no Actinobacteriota.
 df_gc_no_act = df_gc %>%
   filter(phylum != "Actinobacteriota")
 
@@ -199,7 +199,7 @@ df_gc_no_act %>%
   group_by(FS) %>%
   summarize(mean = mean(as.numeric(gc)))
 
-# Figure **** Premature stop codon usage barchart
+# Figure 2: Premature stop codon usage barchart
 df_stop = df %>% 
   filter(stop_identity != "no stop") %>%
   group_by(stop_identity) %>%
@@ -223,7 +223,7 @@ stop_plot = ggplot(df_stop, aes(x = factor(stop_identity, level=c('no stop', 'TG
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\stop_identity_8_1_24.png", stop_plot, width =  6, height = 5, units = "in")
 
-# TGA codon usage violin plot
+# Figure 5C: TGA codon usage violin plot
 
 df_cds = data.frame(read.csv("cds_new_stops.csv"))
 
@@ -262,7 +262,7 @@ plot = ggplot(data = props_TGA, aes(x = factor(stop_presence, level=c('no frames
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\TGA_usage_violin_8_5_24.png", plot, width = 4.5, height = 6, dpi = 600, units = "in")
 
-# Supplemental Figure **** TGA usage Remove Actinobacteriota and rerun.
+# Figure S3: TGA usage no Actinobacteriota.
 df_term_stops_no_act = df_term_stops %>%
   filter(phylum != "Actinobacteriota")
 
@@ -289,7 +289,7 @@ plot = ggplot(data = props_TGA_no_act, aes(x = factor(stop_presence, level=c('no
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\TGA_usage_violin_noact_8_5_24.png", plot, width = 4.5, height = 6, dpi = 600, units = "in")
 
 
-# Supplemental Figure ### GC content correlation with stop codon usage
+# Figure S3 GC content correlation with stop codon usage
 
 df_term_stops$Var2 = factor(df_term_stops$Var2, levels=c("TAA", "TGA", "TAG"))
 plot = ggplot(df_term_stops, aes(x = gc, y = Prop, color = Var2)) +
@@ -305,3 +305,23 @@ plot = ggplot(df_term_stops, aes(x = gc, y = Prop, color = Var2)) +
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_stop_usage_8_6_24.png", plot, width = 7.5, height = 5.5, dpi = 600, units = "in")
 
+
+### --- TABLES --- ###
+
+# Table S1
+table_S1 = df_full %>%
+  unite("taxonomy", domain:species, sep = ";") %>%
+  rename(stop_identity = internal_stop, FS_presence = in_frame_stop., gc = assemblyStats.gcPercent) %>%
+  mutate(FS_presence = recode(FS_presence, no = "no frameshift", yes = "frameshift")) %>%
+  select(assembly, FS_presence, stop_identity, gc, taxonomy)
+
+write.csv(table_S1, "C://Users//cassp//Cornell University//Heather Feaga - Cassidy prfB manuscript//Table_S1.csv",row.names = FALSE)
+
+# Table S2
+
+table_S2 = props_TGA %>%
+  rename(proportion_TGA_stops = Prop, FS_presence = stop_presence, total_TGA_stops = Sum) %>%
+  mutate(FS_presence = recode(FS_presence, no = "no frameshift", yes = "frameshift")) %>%
+  select(assembly, FS_presence, total_TGA_stops, total_stops, proportion_TGA_stops)
+
+write.csv(table_S2, "C://Users//cassp//Cornell University//Heather Feaga - Cassidy prfB manuscript//Table_S2.csv", row.names = FALSE)
