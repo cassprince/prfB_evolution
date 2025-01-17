@@ -2,6 +2,7 @@
 
 ## Authors: Cassidy R. Prince, Isabella N. Lin, Heather A. Feaga
 
-## Preprint is available on biorxiv at
+## Preprint is available on biorxiv at https://www.biorxiv.org/content/10.1101/2024.09.24.614795v1.article-metrics
 
 ### Abstract:
+Release Factor 2 (RF2) is one of two peptide release factors that terminate translation in bacteria. In Escherichia coli, the gene encoding RF2, prfB, contains an in-frame premature RF2-specific stop codon. Therefore, a programmed ribosomal frameshift is required to translate full-length RF2. Here, we investigate the diversity of prfB frameshifting through bioinformatic analyses of >12,000 genomes. We present evidence that prfB frameshifting autoregulates RF2 levels throughout the bacterial domain since (i) the prfB in-frame stop codon is always TGA or TAA, both of which are recognized by RF2, and never the RF1-specific TAG stop codon, and (ii) species that lack the autoregulatory programmed frameshift likely need higher RF2 levels since, on average, they have significantly higher RF2-specific stop codon usage. Overexpression of prfB without the autoregulatory frameshift motif is toxic to Bacillus subtilis, an organism with intermediate RF2-specific stop codon usage. We did not detect the programmed frameshift in any Actinobacteriota. Consistent with this finding, we observed very low frameshift efficiency at the prfB frameshift motif in the Actinobacterium Mycobacterium smegmatis. Our work provides a more complete picture of the evolution of the RF2 programmed frameshifting motif, and its usage to prevent toxic overexpression of RF2.
