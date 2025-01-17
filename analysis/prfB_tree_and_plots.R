@@ -78,7 +78,7 @@ p2 = gheatmap(p1, df3, offset=0.3, width=0.1, font.size=1, colnames = FALSE, col
   theme(text=element_text(size=15)) +
   scale_fill_discrete(name = "Phylum/group", na.value = "white")
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\16S_tree_phy_8_1_24.png", p2, units = "in", width = 17, height = 13, dpi = 600)
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\16S_tree_phy_10_9_24.png", p2, units = "in", width = 17, height = 13, dpi = 600)
 
 # Figure S1: Stop identity on tree
 
@@ -114,15 +114,23 @@ random = random %>%
 
 #write.csv(random, "random_genomes_new.csv")
 
-random = read.csv("random_genomes_new.csv")
-random = column_to_rownames(random, 'X')
+random = read.csv("random_genomes_new.csv") %>%
+  select(-X)
+rownames(random) = random$assembly
 
 # Filter tree for the random representative genomes and midpoint root.
-subtree_bar = get_subtree_with_tips(tree, only_tips = rownames(random))$subtree
+subtree_bar = get_subtree_with_tips(tree, only_tips = random$assembly)$subtree
 tree_mid = midpoint(subtree_bar)
 
-p = ggtree(tree_mid, size = 0.8) %<+% random + xlim(NA, 9) + geom_tiplab(aes(label=phylum), align = TRUE, size = 6)
+# Make tree.
+p = ggtree(tree_mid, size = 0.8) %<+% random + 
+  xlim(NA, 9) + 
+  geom_tiplab(aes(label=phylum), align = TRUE, size = 6) + 
+  geom_nodepoint(aes(fill = as.numeric(label)*100), size = 2, shape = 21) + 
+  scale_fill_gradient(low = "white", high = "black", name = "Bootstrap\npercentage") 
 
+
+# Make barchart.
 p1 = ggplot(random, aes(assembly, Freq)) + 
   geom_col(color="black", fill = "gray80", width = 1, linewidth = 0.7) +
   theme_prism() +
@@ -135,8 +143,10 @@ p1 = ggplot(random, aes(assembly, Freq)) +
 
 p2 = p1 %>% insert_left(p, width = 2)
 
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\collapsed_tree_only_11_1_24.png", p, width = 10, height = 6.4, dpi = 600, units = "in")
 
-png(filename = "C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\collapsed_tree_8_6_24.png", units = "in", width = 16, height = 9, res = 600)
+
+png(filename = "C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\collapsed_tree_11_1_24.png", units = "in", width = 16, height = 9, res = 600)
 
 p2
 
@@ -325,3 +335,160 @@ table_S2 = props_TGA %>%
   select(assembly, FS_presence, total_TGA_stops, total_stops, proportion_TGA_stops)
 
 write.csv(table_S2, "C://Users//cassp//Cornell University//Heather Feaga - Cassidy prfB manuscript//Table_S2.csv", row.names = FALSE)
+
+# Alphas
+
+df_alphas = df_full %>%
+  filter(phylum == "Alphaproteobacteria") 
+
+df_alphas %>%
+  group_by(in_frame_stop.) %>%
+  summarize(mean_size = mean(assemblyStats.totalSequenceLength), mean_gc = mean(assemblyStats.gcPercent))
+
+table(df_alphas$order, df_alphas$in_frame_stop.)
+
+##########33 prfB DNA tree
+tree_prfB = read.newick("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Data\\Bioinformatics\\prfB_3.tre")
+tree_prfB$tip.label = gsub("'", "", tree_prfB$tip.label)
+tree_prfB$tip.label = gsub("\\:.*", "", tree_prfB$tip.label)
+
+
+tree_prfB = get_subtree_with_tips(tree_prfB, only_tips = df_GCF_nc$nuccore)$subtree
+tree_prfB_tip_GCF = left_join(data.frame(tree_prfB$tip.label), df_GCF_nc, by = join_by("tree_prfB.tip.label" == "nuccore"), multiple = "any")
+
+tree_prfB$tip.label = tree_prfB_tip_GCF$assembly
+
+# Get subtree for only genomes with prfB data.
+subtree_prfB = get_subtree_with_tips(tree_prfB, only_tips = rownames(df1))$subtree
+
+tree_prfB_mid_2 = midpoint(subtree_prfB)
+
+p = ggtree(tree_prfB_mid_2, layout='circular', size=0.2) 
+
+p1 = gheatmap(p, df1, offset=-0.2, width=0.1, font.size=1, colnames = FALSE, color=NA) +
+  scale_fill_manual(values=c("yes" = "#961415", "no" = "gray80"), labels = c("no frameshift", "frameshift"), na.value = "white") + 
+  theme(text=element_text(size=18)) + 
+  new_scale_fill()
+
+p2 = gheatmap(p1, df3, offset=0.4, width=0.1, font.size=1, colnames = FALSE, color=NA) +
+  theme(text=element_text(size=15)) +
+  scale_fill_discrete(name = "Phylum/group", na.value = "white")
+
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\prfB_tree_phy_3_10_11_24.png", p2, units = "in", width = 17, height = 13, dpi = 600)
+
+####### myco stops
+
+df_GCF_nc = read.csv("C://Users//cassp//Box Sync//Feaga Lab//Cassidy Prince//Katrina//GCF_nuccore_reps_clean.csv")
+df_GCF_nc$nuccore = gsub("NZ_JAZHCZ02", "NZ_JAZHCY01", df_GCF_nc$nuccore)
+
+df_cds_myco = data.frame(read.csv("cds_myco_stops.csv"))
+df_cds_myco$genome_ID = gsub("NZ_JAZHCZ02", "NZ_JAZHCY01", df_cds_myco$genome_ID)
+
+df_term_stops_myco = data.frame(table(df_cds_myco$genome_ID[df_cds_myco$terminal_stop == "TAA" | df_cds_myco$terminal_stop == "TAG" | df_cds_myco$terminal_stop == "TGA"], df_cds_myco$terminal_stop[df_cds_myco$terminal_stop == "TAA" | df_cds_myco$terminal_stop == "TAG" | df_cds_myco$terminal_stop == "TGA"]))%>% 
+  inner_join(df_GCF_nc, join_by(Var1 == nuccore)) %>%
+  inner_join(df, by = 'assembly') %>%
+  mutate(stop_presence = recode(stop_presence, no = "no frameshift", yes = "frameshift")) %>%
+  group_by(assembly, Var2) %>% 
+  mutate(Sum=sum(Freq)) %>% 
+  ungroup() %>%
+  group_by(assembly) %>%
+  mutate(total_stops = sum(Freq)) %>%
+  ungroup() %>%
+  mutate(Prop = 100*Sum/total_stops) %>%
+  distinct(assembly, Var2, .keep_all = TRUE)
+
+props_TGA = df_term_stops_myco %>%
+  filter(Var2 == "TGA")
+
+
+
+###### Mycoplasma tree
+
+
+df_myco = read.csv("myco_data_clean_10_10_24.csv")
+
+df_myco_trna = read.table("myco_trna.csv", skip = 3, sep = "\t") 
+colnames(df_myco_trna) = c("nuccore", "trna_number", "start", "end", "aa_type", "anticodon", "intron_start", "intron_end", "inf_score", "note")
+df_myco_trna = df_myco_trna %>% 
+  mutate(nuccore, nuccore = str_trim(nuccore))%>%
+  left_join(df_GCF_nc, by = join_by("nuccore")) %>%
+  select(-X)
+
+df_myco_final = data.frame(table(df_myco_trna$assembly, df_myco_trna$aa_type)) %>%
+  filter(Var2 == "Sup") %>%
+  right_join(df_myco, by = join_by("Var1" == "assembly")) %>%
+  select(-X, -Var2) %>%
+  rename(assembly = Var1, sup_count = Freq) %>%
+  mutate(prfB = assembly %in% df$assembly) %>%
+  left_join(select(df, assembly, stop_presence)) %>%
+  left_join(props_TGA %>% select(assembly, Prop))
+
+df_prfb = data.frame(df_myco_final$prfB)
+rownames(df_prfb) = df_myco_final$organism.organismName
+df_FS = data.frame(df_myco_final$stop_presence)
+rownames(df_FS) = df_myco_final$organism.organismName
+df_sup = data.frame(df_myco_final$sup_count)
+df_sup$df_myco_final.sup_count = as.character(df_sup$df_myco_final.sup_count)
+rownames(df_sup) = df_myco_final$organism.organismName
+df_gc = data.frame(df_myco_final$assemblyStats.gcPercent)
+rownames(df_gc) = df_myco_final$organism.organismName
+df_prop = data.frame(df_myco_final$Prop)
+rownames(df_prop) = df_myco_final$organism.organismName
+df_fam = data.frame(df_myco_final$family)
+rownames(df_fam) = df_myco_final$organism.organismName
+
+
+tree_myco = read.newick("myco_phylophlan.tre")
+tree_myco$tip.label = paste0(str_split_i(tree_myco$tip.label, "_", 1), "_", str_split_i(tree_myco$tip.label, "_", 2))
+
+
+
+tree_myco_tip_GCF = data.frame(tree_myco$tip.label) %>%
+  left_join(df_myco_final %>% select(assembly, organism.organismName), by = join_by("tree_myco.tip.label" == "assembly"))
+
+tree_myco$tip.label = tree_myco_tip_GCF$organism.organismName
+tree_myco$node.label = as.numeric(tree_myco$node.label)*100
+
+keep_tips = distinct(data.frame(tree_myco$tip.label))
+
+tree_myco = get_subtree_with_tips(tree_myco, only_tips = keep_tips$tree_myco.tip.label)$subtree
+
+tree_myco_mid = midpoint(tree_myco)
+
+p = ggtree(tree_myco_mid, layout='rectangular', size=0.2) +
+  geom_treescale(x = 0.06, y = 100, linesize=0.5, fontsize=3) +
+  geom_tiplab(size = 2.5) +
+  geom_nodepoint(aes(fill = as.numeric(label)), size = 1, shape = 21) +
+  xlim(NA, 2.5) +
+  scale_fill_gradient(low = "white", high = "black", name = "Bootstrap\npercentage") + 
+  new_scale_fill()
+
+p1 = gheatmap(p, df_prfb, offset=1.4, width=0.05, colnames = FALSE, color=NA) +
+  scale_fill_manual(values = c("TRUE" = "#961415", "FALSE" = "gray80"), name = "prfB present?", na.value = "white") + 
+  new_scale_fill()
+
+p2 = gheatmap(p1, df_sup, offset=1.45, width=0.05, colnames = FALSE, color=NA) +
+  scale_fill_manual(values = c("0" = "gray80", "1" = "#961415", "2" = "#961415"), name = "number of supressor tRNAs", na.value = "white") + 
+  new_scale_fill()
+
+p3 = gheatmap(p2, df_FS, offset=1.5, width=0.05, colnames = FALSE, color=NA) +
+  scale_fill_manual(values = c("no" = "gray80", "yes" = "white"), name = "FS?", na.value = "white") + 
+  new_scale_fill()
+
+p4 = gheatmap(p3, df_gc, offset=1.55, width=0.05, colnames = FALSE, color=NA) +
+  scale_fill_gradient(low = "#edc0c4", high = "#961415", name = "GC content", na.value = "white") + 
+  new_scale_fill()
+
+p5 = gheatmap(p4, df_prop, offset=1.60, width=0.05, colnames = FALSE, color=NA) +
+  scale_fill_gradient(low = "#eddbc0", high = "#964f14", name = "TGA proportion", na.value = "white") + 
+  new_scale_fill()
+
+phylo = gheatmap(p3, df_fam, offset=0.2, width=0.05, colnames = FALSE, color=NA) +
+  scale_fill_discrete(name = "family", na.value = "white") + 
+  new_scale_fill()
+
+p5
+
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\myco_tree_10_21_24.png", p5, units = "in", width = 8.5, height = 10.5, dpi = 600)
+
+

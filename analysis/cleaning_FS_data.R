@@ -13,7 +13,15 @@ df_FS = df_FS %>%
   mutate(ID, ID = gsub("[^:]+$", "", df_FS$ID)) 
 df_FS = df_FS %>%
   mutate(ID, ID = gsub(":", "", df_FS$ID)) %>%
-  select(-X, -prfB_DNA_seq, -prfB_DNA_seq_alignment, -prfB_AA_seq, -seq_description, -notes)
+  select(-X, -prfB_DNA_seq_alignment, -prfB_AA_seq, -seq_description, -notes) %>%
+  mutate(prfB_DNA_len = str_length(prfB_DNA_seq)) %>%
+  select(-prfB_DNA_seq)
+
+df_FS %>% group_by(in_frame_stop.) %>% summarize(mean_len = mean(prfB_DNA_len), sd_len = sd(prfB_DNA_len))
+
+df_FS %>% 
+  group_map(~ t.test(prfB_DNA_len ~ in_frame_stop., .x))
+  
 
 # Upload lineages acquired from NCBI taxdump and taxonkit based on each assembly's taxid.
 lineages = read.csv("C://Users//cassp//Box Sync//Feaga Lab//Cassidy Prince//Katrina//ref_lineage.txt", col.names = "taxID", header = FALSE) %>% 
@@ -43,14 +51,13 @@ df_GCF_nc_tax = left_join(df_GCF_nc, df_GCF_tax_select, by = join_by(assembly ==
 
 # Prepare the final dataframe with Assembly and Nucleotide accession numbers, assembly statistics, taxonomy, and gene presence.
 # Remove archaeal genomes. Filter based on CheckM contamination. Remove any duplicate genomes.
-df_distinct = inner_join(df_FS, df_GCF_nc_tax, by = join_by("ID" == "nuccore")) %>%
-  select(-X) %>%
-  rename(nuccore = ID) %>% 
+df_distinct = df_GCF_nc_tax %>%
   inner_join(lineages, by = join_by("organism.taxId" == "taxID"), multiple = "all") %>%
   filter(!grepl("Archaea", domain)) %>%
   filter(checkmInfo.contamination < 10) %>%
   distinct(assembly, .keep_all = TRUE) %>%  
-  relocate(assembly, nuccore)
+  relocate(assembly, nuccore) %>%
+  select(-X)
 
 # Rename taxonomy to be consistent with Coleman et al 2021.
 df_distinct$phylum[df_distinct$phylum == "delta/epsilon subdivisions"] = "Pseudomonadota"
@@ -67,5 +74,14 @@ df_distinct$phylum[df_distinct$phylum == "Calditrichota"] = "FCB group"
 df_distinct$phylum[df_distinct$phylum == "Thermomicrobiota"] = "Chloroflexota"
 df_distinct$phylum[df_distinct$phylum == "Proteobacteria"] = df_distinct$class[df_distinct$phylum == "Proteobacteria"]
 
+
+df_FS_final = inner_join(df_FS, df_distinct, by = join_by("ID" == "nuccore")) %>%
+  rename(nuccore = ID)
+
+df_mycos = df_distinct %>%
+  filter(phylum == "Mycoplasmatota")
+
 # Write dataframe for figures.
-write.csv(df_distinct, "FS_data_clean_8_5_24.csv")
+write.csv(df_FS_final, "FS_data_clean_8_5_24.csv")
+
+write.csv(df_mycos, "myco_data_clean_10_10_24.csv")
