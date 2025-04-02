@@ -92,7 +92,7 @@ sup_p1 = gheatmap(p, sup_df1, offset=-0.2, width=0.1, font.size=1, colnames = FA
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\FigS1_8_26_24.png", sup_p1, units = "in", width = 17, height = 13, dpi = 600)
 
-### --- FIGURE 5A: TREE WITH BARCHART --- ###
+### --- FIGURE 3A AND FIGURE S2: TREES WITH HEATMAPS --- ###
 
 # Select only phyla with more than 10 genomes.
 
@@ -117,44 +117,74 @@ random = random %>%
 random = read.csv("random_genomes_new.csv") %>%
   select(-X)
 rownames(random) = random$assembly
+random$n = n_vals$Freq
 
 # Filter tree for the random representative genomes and midpoint root.
 subtree_bar = get_subtree_with_tips(tree, only_tips = random$assembly)$subtree
 tree_mid = midpoint(subtree_bar)
 
-# Make tree.
-p = ggtree(tree_mid, size = 0.8) %<+% random + 
-  xlim(NA, 9) + 
+# Make tree with all phyla (Figure S2).
+p_all = ggtree(tree_mid, size = 0.8) %<+% random + 
+  xlim(NA, 15) + 
   geom_tiplab(aes(label=phylum), align = TRUE, size = 6) + 
   geom_nodepoint(aes(fill = as.numeric(label)*100), size = 2, shape = 21) + 
-  scale_fill_gradient(low = "white", high = "black", name = "Bootstrap\npercentage") 
+  scale_fill_gradient(low = "white", high = "black", name = "Bootstrap\npercentage", limits = c(0,100)) +
+  new_scale_fill()
 
 
-# Make barchart.
-p1 = ggplot(random, aes(assembly, Freq)) + 
-  geom_col(color="black", fill = "gray80", width = 1, linewidth = 0.7) +
-  theme_prism() +
-  xlab("") +
-  ylab("% genomes with frameshift") +
-  theme(axis.text.y=element_blank(), text=element_text(size=17)) +
-  scale_y_continuous(expand= c(0,0), limits = c(0,110)) +
-  geom_text(position = position_dodge2(preserve = 'single',width = 0.9), hjust = -.3, aes(label = n_vals$Freq, size = 17)) +
-  coord_flip()
+all = gheatmap(p_all, random %>% select(Freq), offset = 10, width=0.4, font.size=3.5, colnames = FALSE, color=NA, colnames_angle = 90, colnames_offset_y = -0.2) + 
+  scale_fill_viridis_c(option="F", direction = -1, name="Percent\nwith frameshift") 
 
-p2 = p1 %>% insert_left(p, width = 2)
+all
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\collapsed_tree_only_11_1_24.png", p, width = 10, height = 6.4, dpi = 600, units = "in")
+text_all = ggplot(random, aes(assembly, y = 0)) + 
+  geom_text(hjust = 0, aes(label = n, size = 17)) +
+  coord_flip() +
+  theme_void() +
+  theme(legend.position="none")
+  
+all_n = text %>% insert_left(all, width = 10)
 
 
-png(filename = "C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\collapsed_tree_11_1_24.png", units = "in", width = 16, height = 9, res = 600)
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\full_phyla_heatmap_3_7_25.png", all_n, width = 11, height = 6.4, dpi = 600, units = "in")
 
-p2
+# Deep root only (Figure 3A).
+deep_phyla = c("Spirochaetota", "Deinococcota", "Fusobacteriota", "Synergistota", "Thermotogota")
 
-dev.off()
+random_deep = random %>%
+  filter(phylum %in% deep_phyla)
+
+subtree_deep = get_subtree_with_tips(tree, only_tips = random_deep$assembly)$subtree
+tree_mid_deep = midpoint(subtree_deep)
+
+
+p_deep = ggtree(tree_mid_deep, size = 0.8) %<+% random_deep + 
+  xlim(NA, 15) + 
+  geom_tiplab(aes(label=phylum), align = FALSE, size = 6) + 
+  geom_nodepoint(aes(fill = as.numeric(label)*100), size = 2, shape = 21) + 
+  scale_fill_gradient(low = "white", high = "black", name = "Bootstrap\npercentage", limits = c(0,100)) +
+  new_scale_fill()
+
+
+deep = gheatmap(p_deep, random_deep %>% select(Freq), offset = 7, width=0.4, font.size=3.5, colnames = FALSE, color=NA, colnames_angle = 90, colnames_offset_y = -0.2) + 
+  scale_fill_viridis_c(option="F", direction = -1, name="Percent\nwith frameshift") +
+  theme(text = element_text(size = 12))
+
+deep
+
+text_deep = ggplot(random_deep, aes(assembly, y = 0)) + 
+  geom_text(hjust = 0, aes(label = n, size = 17)) +
+  coord_flip() +
+  theme_void() +
+  theme(legend.position="none")
+
+deep_n = text_deep %>% insert_left(deep, width = 7)
+
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\deep_phyla_heatmap_3_7_25.png", deep_n, width = 7, height = 3, dpi = 600, units = "in")
 
 ### --- OTHER PLOTS --- ###
 
-# Figure 5B: GC % violin plot
+# Figure 5A: GC % violin plot
 df_gc = df %>%
   mutate(FS = recode(stop_identity, TGA = "frameshift", TAA = "frameshift", 'no stop' = "no frameshift"))
 
@@ -165,19 +195,22 @@ summ = df_gc %>%
 vplot = ggplot(df_gc, aes(x = factor(FS, level=c('no frameshift', 'frameshift')), y = gc, fill = FS))+
   geom_violin(trim=TRUE, width = 0.7)+
   geom_boxplot(width=0.1, outlier.shape = NA)+
-  theme_prism()+
-  scale_y_continuous(expand= c(0,0), limits = c(20, 84))+
-  scale_fill_manual(values = c("no frameshift" = "gray80", "frameshift" = "#961415"), breaks=c("no frameshift", "frameshift")) +
+  theme_classic()+
+  scale_y_continuous(expand= c(0,0), limits = c(20, 89))+
+  scale_fill_manual(values = c("no frameshift" = "gray80", "frameshift" = "#BA272F"), breaks=c("no frameshift", "frameshift")) +
   theme(text = element_text(size = 17))+
   xlab("")+
   ylab("GC content (%)") + 
-  theme(legend.position = "none") +
-  geom_text(data = summ, aes(label = n)) +
-  stat_compare_means(method = "t.test", label.y = 83, label.x = 1.5, label = "p.format")
+  theme(legend.position = "none",
+        axis.text = element_text(color="black"),
+        axis.ticks = element_line(color = "black")) +
+  geom_text(data = summ, aes(label = n), , size = 5) #+
+  #stat_compare_means(method = "t.test", label.y = 83, label.x = 1.5, label = "p.format")
+vplot
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_violin_8_1_24.png", vplot, width = 4.5, height = 6, dpi = 600, units = "in") 
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_violin_3_17_25.png", vplot, width = 4, height = 4, dpi = 600, units = "in") 
 
-# Figure S3: GC % no Actinobacteriota.
+# Figure 5C: GC % no Actinobacteriota.
 df_gc_no_act = df_gc %>%
   filter(phylum != "Actinobacteriota")
 
@@ -188,17 +221,17 @@ summ_no_act = df_gc_no_act %>%
 vplot_no_act = ggplot(df_gc_no_act, aes(x = factor(FS, level=c('no frameshift', 'frameshift')), y = gc, fill = FS))+
   geom_violin(trim=TRUE, width = 0.7)+
   geom_boxplot(width=0.1, outlier.shape = NA)+
-  theme_prism()+
+  theme_classic()+
   scale_y_continuous(expand= c(0,0), limits = c(20, 89))+
-  scale_fill_manual(values = c("no frameshift" = "gray80", "frameshift" = "#961415"), breaks=c("no frameshift", "frameshift")) +
+  scale_fill_manual(values = c("no frameshift" = "gray80", "frameshift" = "#BA272F"), breaks=c("no frameshift", "frameshift")) +
   theme(text = element_text(size = 17))+
   xlab("")+
   ylab("GC content (%)") + 
   theme(legend.position = "none") +
-  geom_text(data = summ_no_act, aes(label = n)) +
-  stat_compare_means(method = "t.test", label.y = 85, label.x = 1.5, label = "p.format")
+  geom_text(data = summ_no_act, aes(label = n), size = 5) #+
+  #stat_compare_means(method = "t.test", label.y = 85, label.x = 1.5, label = "p.format")
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_violin_no_act_8_6_24.png", vplot_no_act, width = 4.5, height = 6, dpi = 600, units = "in")
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_violin_no_act_3_17_25.png", vplot_no_act, width = 4, height = 4, dpi = 600, units = "in")
 
 # What is the mean GC content for FS vs no FS in both GC datasets?
 df_gc %>%
@@ -209,7 +242,7 @@ df_gc_no_act %>%
   group_by(FS) %>%
   summarize(mean = mean(as.numeric(gc)))
 
-# Figure 2: Premature stop codon usage barchart
+# Figure 2B: Premature stop codon usage barchart
 df_stop = df %>% 
   filter(stop_identity != "no stop") %>%
   group_by(stop_identity) %>%
@@ -221,19 +254,25 @@ yticks = c(0, 100, 200, 2000, 4000, 6000, 8000)
 
 stop_plot = ggplot(df_stop, aes(x = factor(stop_identity, level=c('no stop', 'TGA', 'TAA', 'TAG')), y = n, fill = stop_identity)) +
   geom_col(color = "black") + 
-  theme_prism() +
+  theme_classic() +
   scale_fill_manual(breaks = legend_ord, values = c("TGA" = "#961415", "TAA" = "#520e15", "TAG" = "#EFAFB3")) +
   scale_y_continuous(expand= c(0,0), limits = c(0, 8500), breaks = yticks) +
-  scale_y_break(c(210, 2000), scales = 4, expand= c(0,0), space = 0.5) +
-  geom_text(aes(y=n+1, label=n), vjust= -0.5, color="black", size=5) +
-  geom_text(aes(y=n+1, label=paste0(round(100*n/sum(n), 1), "%")), vjust= 1.6, color="white", size=5) +
-  xlab("Premature stop codon identity") +
+  scale_y_break(c(210, 2000), scales = 3, expand= c(0,0), space = 0.2) +
+  geom_text(aes(y=n+1, label=n), vjust= -0.5, color="black", size=3.8) +
+  geom_text(aes(y=n+1, label=paste0(round(100*n/sum(n), 1), "%")), vjust= 1.6, color="white", size=3.8) +
+  xlab("Premature stop \ncodon identity") +
   ylab("Number of genomes") +
-  theme(text = element_text(size = 18))
+  theme(text = element_text(size = 14), 
+        axis.title = element_text(size = 15), 
+        legend.position="none",
+        axis.text = element_text(color="black"),
+        axis.ticks = element_line(color = "black"))
+stop_plot
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\stop_identity_8_1_24.png", stop_plot, width =  6, height = 5, units = "in")
 
-# Figure 5C: TGA codon usage violin plot
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\stop_identity_3_13_25.png", stop_plot, width =  3, height = 3.5, units = "in", dpi = 600)
+
+# Figure 5B: TGA codon usage violin plot
 
 df_cds = data.frame(read.csv("cds_new_stops.csv"))
 
@@ -260,19 +299,21 @@ summ = props_TGA %>%
 plot = ggplot(data = props_TGA, aes(x = factor(stop_presence, level=c('no frameshift', 'frameshift')), y = Prop, fill = stop_presence))+
   geom_violin(trim=TRUE, width = 0.7)+
   geom_boxplot(width=0.1, outlier.shape = NA)+
-  theme_prism()+
+  theme_classic()+
   scale_y_continuous(expand= c(0,0), limits = c(0, 115), breaks = c(0, 25, 50, 75, 100))+
-  scale_fill_manual(values = c("no frameshift" = "gray80", "frameshift" = "#961415"), breaks=c("no frameshift", "frameshift")) +
+  scale_fill_manual(values = c("no frameshift" = "gray80", "frameshift" = "#BA272F"), breaks=c("no frameshift", "frameshift")) +
   theme(text = element_text(size = 17))+
   xlab("")+
   ylab("TGA codon usage (%)") + 
-  theme(legend.position = "none") +
-  geom_text(data = summ, aes(label = n)) +
-  stat_compare_means(method = "t.test", label.y = 105, label.x = 1.4, label = "p.format")
+  theme(legend.position = "none",
+        axis.text = element_text(color="black"),
+        axis.ticks = element_line(color = "black")) +
+  geom_text(data = summ, aes(label = n), size = 5)# +
+  #stat_compare_means(method = "t.test", label.y = 105, label.x = 1.4, label = "p.format")
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\TGA_usage_violin_8_5_24.png", plot, width = 4.5, height = 6, dpi = 600, units = "in")
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\TGA_usage_violin_3_17_25.png", plot, width = 4, height = 4, dpi = 600, units = "in")
 
-# Figure S3: TGA usage no Actinobacteriota.
+# Figure 5D: TGA usage no Actinobacteriota.
 df_term_stops_no_act = df_term_stops %>%
   filter(phylum != "Actinobacteriota")
 
@@ -286,17 +327,19 @@ summ = props_TGA_no_act %>%
 plot = ggplot(data = props_TGA_no_act, aes(x = factor(stop_presence, level=c('no frameshift', 'frameshift')), y = Prop, fill = stop_presence))+
   geom_violin(trim=TRUE, width = 0.7)+
   geom_boxplot(width=0.1, outlier.shape = NA)+
-  theme_prism()+
+  theme_classic()+
   scale_y_continuous(expand= c(0,0), limits = c(0, 110), breaks = c(0, 25, 50, 75, 100))+
-  scale_fill_manual(values = c("no frameshift" = "gray80", "frameshift" = "#961415"), breaks=c("no frameshift", "frameshift")) +
+  scale_fill_manual(values = c("no frameshift" = "gray80", "frameshift" = "#BA272F"), breaks=c("no frameshift", "frameshift")) +
   theme(text = element_text(size = 17))+
   xlab("")+
   ylab("TGA codon usage (%)") + 
-  theme(legend.position = "none") +
-  geom_text(data = summ, aes(label = n)) +
-  stat_compare_means(method = "t.test", label.y = 105, label.x = 1.4, label = "p.format")
+  theme(legend.position = "none",
+        axis.text = element_text(color="black"),
+        axis.ticks = element_line(color = "black")) +
+  geom_text(data = summ, aes(label = n), size = 5) #+
+  #stat_compare_means(method = "t.test", label.y = 105, label.x = 1.4, label = "p.format")
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\TGA_usage_violin_noact_8_5_24.png", plot, width = 4.5, height = 6, dpi = 600, units = "in")
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\TGA_usage_violin_noact_3_17_25.png", plot, width = 4, height = 4, dpi = 600, units = "in")
 
 
 # Figure S3 GC content correlation with stop codon usage
@@ -336,7 +379,7 @@ table_S2 = props_TGA %>%
 
 write.csv(table_S2, "C://Users//cassp//Cornell University//Heather Feaga - Cassidy prfB manuscript//Table_S2.csv", row.names = FALSE)
 
-# Alphas
+# Summary information about Alphaproteobacteria
 
 df_alphas = df_full %>%
   filter(phylum == "Alphaproteobacteria") 
@@ -347,7 +390,7 @@ df_alphas %>%
 
 table(df_alphas$order, df_alphas$in_frame_stop.)
 
-##########33 prfB DNA tree
+########## prfB DNA tree
 tree_prfB = read.newick("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Data\\Bioinformatics\\prfB_3.tre")
 tree_prfB$tip.label = gsub("'", "", tree_prfB$tip.label)
 tree_prfB$tip.label = gsub("\\:.*", "", tree_prfB$tip.label)
@@ -376,7 +419,7 @@ p2 = gheatmap(p1, df3, offset=0.4, width=0.1, font.size=1, colnames = FALSE, col
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\prfB_tree_phy_3_10_11_24.png", p2, units = "in", width = 17, height = 13, dpi = 600)
 
-####### myco stops
+# Mycoplasmatota stops
 
 df_GCF_nc = read.csv("C://Users//cassp//Box Sync//Feaga Lab//Cassidy Prince//Katrina//GCF_nuccore_reps_clean.csv")
 df_GCF_nc$nuccore = gsub("NZ_JAZHCZ02", "NZ_JAZHCY01", df_GCF_nc$nuccore)
@@ -401,9 +444,7 @@ props_TGA = df_term_stops_myco %>%
   filter(Var2 == "TGA")
 
 
-
-###### Mycoplasma tree
-
+### --- FIGURE 4: MYCOPLASMA TREE --- ###
 
 df_myco = read.csv("myco_data_clean_10_10_24.csv")
 
@@ -490,5 +531,3 @@ phylo = gheatmap(p3, df_fam, offset=0.2, width=0.05, colnames = FALSE, color=NA)
 p5
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\myco_tree_10_21_24.png", p5, units = "in", width = 8.5, height = 10.5, dpi = 600)
-
-
