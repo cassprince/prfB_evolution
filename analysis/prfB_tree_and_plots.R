@@ -347,16 +347,18 @@ ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\TG
 df_term_stops$Var2 = factor(df_term_stops$Var2, levels=c("TAA", "TGA", "TAG"))
 plot = ggplot(df_term_stops, aes(x = gc, y = Prop, color = Var2)) +
   geom_point(size = 3, alpha = 0.7)+
-  theme_prism()+
-  scale_color_manual(values=c("TAA" = "#520E15", "TGA" = "#961415", "TAG" = "#CB757C"))+
+  theme_classic()+
+  scale_color_manual(values=c("TAA" = "#520E15", "TGA" = "#961415", "TAG" = "#CB757C"), name = "Stop codon \nidentity")+
   scale_y_continuous(expand= c(0,0), limits = c(0, 100)) +
-  theme(text = element_text(size = 17)) +
+  theme(text = element_text(size = 20), 
+        axis.text = element_text(color="black"),
+        axis.ticks = element_line(color = "black")) +
   stat_poly_line(se = FALSE) +
   stat_poly_eq(use_label(c("eq", "R2")), label.x = "center") +
   xlab("GC content (%)")+
-  ylab("% of stop codons")
+  ylab("Stop codon usage (%)")
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_stop_usage_8_6_24.png", plot, width = 7.5, height = 5.5, dpi = 600, units = "in")
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_stop_usage_4_3_25.png", plot, width = 8, height = 5.7, dpi = 600, units = "in")
 
 
 ### --- TABLES --- ###
