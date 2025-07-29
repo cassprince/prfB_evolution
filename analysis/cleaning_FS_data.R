@@ -22,6 +22,16 @@ df_FS %>% group_by(in_frame_stop.) %>% summarize(mean_len = mean(prfB_DNA_len), 
 df_FS %>% 
   group_map(~ t.test(prfB_DNA_len ~ in_frame_stop., .x))
   
+# prfA data
+
+df_prfA = read.csv("prfA_FS_data_5_31_25.csv") 
+
+df_prfA = df_prfA %>%
+  mutate(ID, ID = substr(ID, 5, nchar(ID))) 
+
+df_prfA = df_prfA %>%
+  mutate(ID, ID = sub('\\_cds.*', '', df_prfA$ID)) %>%
+  select(nuccore = "ID", "in_frame_stop.", "pseudo", "internal_stop_index", "internal_stop", "total_length", "FS_context_seq")
 
 # Upload lineages acquired from NCBI taxdump and taxonkit based on each assembly's taxid.
 lineages = read.csv("C://Users//cassp//Box Sync//Feaga Lab//Cassidy Prince//Katrina//ref_lineage.txt", col.names = "taxID", header = FALSE) %>% 
@@ -64,7 +74,7 @@ df_distinct$phylum[df_distinct$phylum == "delta/epsilon subdivisions"] = "Pseudo
 df_distinct$phylum[df_distinct$phylum == "Pseudomonadota"] = "Proteobacteria"
 df_distinct$phylum[df_distinct$phylum == "Terrabacteria group"] = df_distinct$class[df_distinct$phylum == "Terrabacteria group"]
 df_distinct$phylum[df_distinct$phylum == "Bacillota"] = "Firmicutes"
-df_distinct$phylum[df_distinct$phylum == "Actinomycetota"] = "Actinobacteriota"
+df_distinct$phylum[df_distinct$phylum == "Actinomycetota"] = "Actinomycetota"
 df_distinct$phylum[df_distinct$phylum == "Abditibacteriota"] = "Armatimonadota"
 df_distinct$phylum[df_distinct$phylum == "Aquificota"] = "Aquificota + Campylobacterota + Deferribacterota"
 df_distinct$phylum[df_distinct$phylum == "Campylobacterota"] = "Aquificota + Campylobacterota + Deferribacterota"
@@ -74,14 +84,14 @@ df_distinct$phylum[df_distinct$phylum == "Calditrichota"] = "FCB group"
 df_distinct$phylum[df_distinct$phylum == "Thermomicrobiota"] = "Chloroflexota"
 df_distinct$phylum[df_distinct$phylum == "Proteobacteria"] = df_distinct$class[df_distinct$phylum == "Proteobacteria"]
 
-
-df_FS_final = inner_join(df_FS, df_distinct, by = join_by("ID" == "nuccore")) %>%
-  rename(nuccore = ID)
+df_prfB_GCF = inner_join(df_FS, df_GCF_nc_tax, by = join_by("ID" == "nuccore")) %>%
+  select(-X) %>%
+  inner_join(lineages, by = join_by("organism.taxId" == "taxID"), multiple = "all")
 
 df_mycos = df_distinct %>%
   filter(phylum == "Mycoplasmatota")
 
 # Write dataframe for figures.
-write.csv(df_FS_final, "FS_data_clean_8_5_24.csv")
+write.csv(df_prfB_GCF, "FS_data_clean_8_5_24.csv")
 
 write.csv(df_mycos, "myco_data_clean_10_10_24.csv")

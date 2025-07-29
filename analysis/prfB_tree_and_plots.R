@@ -23,16 +23,19 @@ df_full = read.csv("FS_data_clean_8_1_24.csv")
 
 df = df_full %>%
   select(assembly, nuccore, in_frame_stop., internal_stop, phylum, assemblyStats.gcPercent) %>%
-  rename(stop_identity = internal_stop, stop_presence = in_frame_stop., gc = assemblyStats.gcPercent)
+  rename(stop_identity = internal_stop, stop_presence = in_frame_stop., gc = assemblyStats.gcPercent) 
+
+df$phylum[df$phylum == "Actinomycetota"] = "Actinomycetota"
+
 rownames(df) = df$assembly
 
 # Four Actinobacteria in the dataset claim to have an internal stop codon, but based on manual inspection their prfB genes are misannotated. Fixing the data to reflect this.
 actinos = df %>%
-  filter(phylum == "Actinobacteriota") %>%
+  filter(phylum == "Actinomycetota") %>%
   mutate(stop_presence = "no", stop_identity = "no stop")
 
 df = df %>%
-  filter(phylum != "Actinobacteriota") %>%
+  filter(phylum != "Actinomycetota") %>%
   bind_rows(actinos) %>%
   mutate()
 
@@ -86,7 +89,7 @@ sup_df1 = data.frame(df$stop_identity)
 rownames(sup_df1) = rownames(df)
 
 sup_p1 = gheatmap(p, sup_df1, offset=-0.2, width=0.1, font.size=1, colnames = FALSE, color=NA) +
-  scale_fill_manual(values=c("no stop" = "gray80", "TGA" = "#961415", "TAA" = "#520e15", "TAG" = "white"), name="Internal stop codon \nidentity or modification", na.value = "white") + 
+  scale_fill_manual(values=c("no stop" = "gray80", "TGA" = "#961415", "TAA" = "goldenrod", "TAG" = "white"), name="Internal stop codon \nidentity or modification", na.value = "white") + 
   theme(text=element_text(size=18)) + 
   new_scale_fill()
 
@@ -118,6 +121,7 @@ random = read.csv("random_genomes_new.csv") %>%
   select(-X)
 rownames(random) = random$assembly
 random$n = n_vals$Freq
+random$phylum[random$phylum == "Actinomycetota"] = "Actinomycetota"
 
 # Filter tree for the random representative genomes and midpoint root.
 subtree_bar = get_subtree_with_tips(tree, only_tips = random$assembly)$subtree
@@ -138,15 +142,16 @@ all = gheatmap(p_all, random %>% select(Freq), offset = 10, width=0.4, font.size
 all
 
 text_all = ggplot(random, aes(assembly, y = 0)) + 
-  geom_text(hjust = 0, aes(label = n, size = 17)) +
+  geom_text(hjust = 0, aes(label = n, size = 19)) +
+  geom_text(hjust = 1, aes(y = 0.1, label = round(Freq,1), size = 19)) +
   coord_flip() +
   theme_void() +
   theme(legend.position="none")
   
-all_n = text %>% insert_left(all, width = 10)
+all_n = text_all %>% insert_left(all, width = 5)
 
-
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\full_phyla_heatmap_3_7_25.png", all_n, width = 11, height = 6.4, dpi = 600, units = "in")
+all_n
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\full_phyla_heatmap_5_27_25.png", all_n, width = 12, height = 6.4, dpi = 600, units = "in")
 
 # Deep root only (Figure 3A).
 deep_phyla = c("Spirochaetota", "Deinococcota", "Fusobacteriota", "Synergistota", "Thermotogota")
@@ -173,14 +178,15 @@ deep = gheatmap(p_deep, random_deep %>% select(Freq), offset = 7, width=0.4, fon
 deep
 
 text_deep = ggplot(random_deep, aes(assembly, y = 0)) + 
-  geom_text(hjust = 0, aes(label = n, size = 17)) +
+  geom_text(hjust = 0, aes(label = n, size = 19)) +
+  geom_text(hjust = 1, aes(y = 0.1, label = round(Freq,1), size = 19)) +
   coord_flip() +
   theme_void() +
   theme(legend.position="none")
 
 deep_n = text_deep %>% insert_left(deep, width = 7)
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\deep_phyla_heatmap_3_7_25.png", deep_n, width = 7, height = 3, dpi = 600, units = "in")
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\deep_phyla_heatmap_5_27_25.png", deep_n, width = 7.5, height = 3, dpi = 600, units = "in")
 
 ### --- OTHER PLOTS --- ###
 
@@ -210,9 +216,9 @@ vplot
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_violin_3_17_25.png", vplot, width = 4, height = 4, dpi = 600, units = "in") 
 
-# Figure 5C: GC % no Actinobacteriota.
+# Figure 5C: GC % no Actinomycetota.
 df_gc_no_act = df_gc %>%
-  filter(phylum != "Actinobacteriota")
+  filter(phylum != "Actinomycetota")
 
 summ_no_act = df_gc_no_act %>%
   group_by(FS) %>%
@@ -313,9 +319,9 @@ plot = ggplot(data = props_TGA, aes(x = factor(stop_presence, level=c('no frames
 
 ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\TGA_usage_violin_3_17_25.png", plot, width = 4, height = 4, dpi = 600, units = "in")
 
-# Figure 5D: TGA usage no Actinobacteriota.
+# Figure 5D: TGA usage no Actinomycetota.
 df_term_stops_no_act = df_term_stops %>%
-  filter(phylum != "Actinobacteriota")
+  filter(phylum != "Actinomycetota")
 
 props_TGA_no_act = df_term_stops_no_act %>%
   filter(Var2 == "TGA")
@@ -346,19 +352,20 @@ ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\TG
 
 df_term_stops$Var2 = factor(df_term_stops$Var2, levels=c("TAA", "TGA", "TAG"))
 plot = ggplot(df_term_stops, aes(x = gc, y = Prop, color = Var2)) +
-  geom_point(size = 3, alpha = 0.7)+
+  geom_point(size = 2, alpha = 0.3)+
   theme_classic()+
-  scale_color_manual(values=c("TAA" = "#520E15", "TGA" = "#961415", "TAG" = "#CB757C"), name = "Stop codon \nidentity")+
+  scale_color_manual(values=c("TAA" = "goldenrod", "TGA" = "#961415", "TAG" = "navy"), name = "Stop codon \nidentity")+
   scale_y_continuous(expand= c(0,0), limits = c(0, 100)) +
   theme(text = element_text(size = 20), 
         axis.text = element_text(color="black"),
         axis.ticks = element_line(color = "black")) +
   stat_poly_line(se = FALSE) +
-  stat_poly_eq(use_label(c("eq", "R2")), label.x = "center") +
+  #stat_poly_eq(use_label(c("eq", "R2")), label.x = "center") +
   xlab("GC content (%)")+
   ylab("Stop codon usage (%)")
+plot
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_stop_usage_4_3_25.png", plot, width = 8, height = 5.7, dpi = 600, units = "in")
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\GC_stop_usage_5_27_25.png", plot, width = 7, height = 4,dpi = 600, units = "in")
 
 
 ### --- TABLES --- ###
@@ -368,9 +375,12 @@ table_S1 = df_full %>%
   unite("taxonomy", domain:species, sep = ";") %>%
   rename(stop_identity = internal_stop, FS_presence = in_frame_stop., gc = assemblyStats.gcPercent) %>%
   mutate(FS_presence = recode(FS_presence, no = "no frameshift", yes = "frameshift")) %>%
-  select(assembly, FS_presence, stop_identity, gc, taxonomy)
+  select(assembly, FS_presence, stop_identity, gc, taxonomy) %>%
+  mutate(stop_identity, stop_identity = ifelse(stop_identity == "TAA" | stop_identity == "TGA", stop_identity, "NA"))
+
 
 write.csv(table_S1, "C://Users//cassp//Cornell University//Heather Feaga - Cassidy prfB manuscript//Table_S1.csv",row.names = FALSE)
+
 
 # Table S2
 
@@ -380,6 +390,17 @@ table_S2 = props_TGA %>%
   select(assembly, FS_presence, total_TGA_stops, total_stops, proportion_TGA_stops)
 
 write.csv(table_S2, "C://Users//cassp//Cornell University//Heather Feaga - Cassidy prfB manuscript//Table_S2.csv", row.names = FALSE)
+
+
+### Table_S4
+table_S4 = df_myco_final %>%
+  unite("taxonomy", domain:species, sep = ";") %>%
+  rename(prfB_presence = prfB, gc = assemblyStats.gcPercent, proportion_TGA_stops = Prop, FS_presence = stop_presence, total_suppressors = sup_count) %>%
+  mutate(FS_presence = recode(FS_presence, no = "no frameshift", yes = "frameshift")) %>%
+  select(assembly, prfB_presence, FS_presence, total_suppressors, gc, taxonomy)
+
+write.csv(table_S4, "C://Users//cassp//Cornell University//Heather Feaga - Cassidy prfB manuscript//Table_S4.csv",row.names = FALSE)
+
 
 # Summary information about Alphaproteobacteria
 
@@ -511,7 +532,7 @@ p1 = gheatmap(p, df_prfb, offset=1.4, width=0.05, colnames = FALSE, color=NA) +
   new_scale_fill()
 
 p2 = gheatmap(p1, df_sup, offset=1.45, width=0.05, colnames = FALSE, color=NA) +
-  scale_fill_manual(values = c("0" = "gray80", "1" = "#961415", "2" = "#961415"), name = "number of supressor tRNAs", na.value = "white") + 
+  scale_fill_manual(values = c("0" = "gray80", "1" = "#4E161A", "2" = "#4E161A"), name = "number of supressor tRNAs", na.value = "white") + 
   new_scale_fill()
 
 p3 = gheatmap(p2, df_FS, offset=1.5, width=0.05, colnames = FALSE, color=NA) +
@@ -532,4 +553,4 @@ phylo = gheatmap(p3, df_fam, offset=0.2, width=0.05, colnames = FALSE, color=NA)
 
 p5
 
-ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\myco_tree_10_21_24.png", p5, units = "in", width = 8.5, height = 10.5, dpi = 600)
+ggsave("C:\\Users\\cassp\\Box Sync\\Feaga Lab\\Cassidy Prince\\prfB\\Figures\\myco_tree_7_23_25.png", p5, units = "in", width = 8.5, height = 10.5, dpi = 600)
